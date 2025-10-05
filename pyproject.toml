@@ -1,0 +1,72 @@
+[tool.poetry]
+name = "betterai-project"
+version = "0.1.0"
+description = ""
+authors = ["Isaac Hunter", "Jhonathan Herrera", "Annabel Stocks Natalias", "Aslesha Kunchepu", "Jatin Salve"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.13.3"
+black = "^25.9.0"
+isort = "^6.1.0"
+pytest = "^8.4.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+############################
+# Code linting
+############################
+[tool.black]
+line-length = 100
+target-version = ['py313']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+skip = []
+
+[tool.ruff]
+target-version = "py313"
+exclude = ['__pycache__',]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "UP045", # Use `X | None` for type annotations
+    "UP031", # Allow % symbol for formatting, aligns with django conventions
+]
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
+
+
+
