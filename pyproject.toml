@@ -12,6 +12,9 @@ dependencies = [
   "emoji>=2.15.0",
   "google-api-python-client>=2.185.0",
   "torch>=2.2.2",
+  "rdflib>=7.3.0",
+  "attrs>=25.4.0",
+  "ipykernel>=7.0.1",
 ]
 
 [dependency-groups]
