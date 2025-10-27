@@ -2,6 +2,10 @@
 Data Processing Pipline Entrypoint
 """
 
+from common.tokenize import tokenize_text
+
+from .tokens_to_rdf import tokens_to_rdf
+
 
 def run_pipeline(text: str) -> object:
     """
@@ -19,4 +23,10 @@ def run_pipeline(text: str) -> object:
     Object in JSON-LD format representing the nodes created in the RDF database.
     """
 
-    raise NotImplementedError()
+    # Step 1: Convert text to tokens using NER, POS, etc
+    tokens = tokenize_text(text)
+
+    # Step 2: Convert tokens to RDF graph form
+    graph = tokens_to_rdf(tokens)
+
+    return graph

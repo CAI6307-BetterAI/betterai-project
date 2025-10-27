@@ -23,7 +23,7 @@ def main():
     db.apply_json(out_1)
 
     # Execute query against database
-    out_2 = run_pipeline_2(text=query_text)
+    out_2 = run_pipeline_2(db=db, text=query_text)
     print("Answer output:", out_2)
 
 

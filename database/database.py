@@ -5,6 +5,7 @@ from rdflib import Graph
 
 
 class Database:
+    """Utility class to manage RDF graph."""
 
     instance: Optional["Database"] = None
     graph: Graph
