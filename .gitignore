@@ -49,3 +49,6 @@ Thumbs.db
 .coverage
 .mypy_cache/
 .pytest_cache/
+
+graph.hdt
+graph.json

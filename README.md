@@ -6,7 +6,13 @@
 
 ## Setup
 
-1. Install dependencies
+1. Sync submodules
+
+   ```sh
+   git submodule update --init --remote
+   ```
+
+2. Install dependencies
 
    ```sh
    uv sync
