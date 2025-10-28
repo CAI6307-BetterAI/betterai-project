@@ -36,7 +36,7 @@ uv run main.py
 
 Below are the datasets used for evaluation and benchmarking hallucination reduction in RDF-grounded LMs.
 
-**PubMedDQ** - [Link](https://drive.google.com/drive/folders/1rOM_Y0FbmqsuJqjqcu7bntM1cB9QoKRn?usp=sharing)
+**PubMedQA** - [Link](https://drive.google.com/drive/folders/1rOM_Y0FbmqsuJqjqcu7bntM1cB9QoKRn?usp=sharing)
 
 
 
