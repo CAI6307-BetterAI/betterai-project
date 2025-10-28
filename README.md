@@ -36,20 +36,17 @@ uv run main.py
 
 Below are the datasets used for evaluation and benchmarking hallucination reduction in RDF-grounded LMs.
 
-| Dataset | Description | Link  |
-|----------|--------------|----------------|-------------|
-| **PubMedQA (Labeled)** | Biomedical yes/no QA dataset with verified human labels (1k samples). | [Local Repository Link - ](https://drive.google.com/drive/folders/1rOM_Y0FbmqsuJqjqcu7bntM1cB9QoKRn?usp=sharing)|
-| **PubMedQA (Artificial)** | Automatically labeled synthetic QA pairs (211k). Used for model calibration or pre-training. | [Local Repository Link - ](https://drive.google.com/drive/folders/1rOM_Y0FbmqsuJqjqcu7bntM1cB9QoKRn?usp=sharing) |
-| **PubMedQA (Unlabeled)** | Questions and contexts without gold labels (61k). Used for retrieval evaluation. | [Local Repository Link - ](https://drive.google.com/drive/folders/1rOM_Y0FbmqsuJqjqcu7bntM1cB9QoKRn?usp=sharing)  |
+**PubMedDQ** - [Link](https://drive.google.com/drive/folders/1rOM_Y0FbmqsuJqjqcu7bntM1cB9QoKRn?usp=sharing)
+
 
 
 ---
 
 ### Notes
 
-- `pubmedqa.jsonl` → Main evaluation benchmark (factual accuracy, hallucination rate).  
-- `pubmedqa_artificial.jsonl` → Optional training/calibration dataset.  
-- `pubmedqa_unlabeled.jsonl` → Retrieval stress-testing for RDF graph coverage.  
+- `pubmedqa.jsonl` → Main evaluation benchmark (factual accuracy, hallucination rate). - Biomedical yes/no QA dataset with verified human labels (1k samples). 
+- `pubmedqa_artificial.jsonl` → Optional training/calibration dataset. - Automatically labeled synthetic QA pairs (211k). Used for model calibration or pre-training.
+- `pubmedqa_unlabeled.jsonl` → Retrieval stress-testing for RDF graph coverage. - Questions and contexts without gold labels (61k). Used for retrieval evaluation. 
 - `medqa.jsonl` → Complex reasoning benchmark (clinical multi-choice).  
 - `medhalt.jsonl` → Hallucination stress test for medical text generation.
 
