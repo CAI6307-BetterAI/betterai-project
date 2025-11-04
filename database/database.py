@@ -25,7 +25,7 @@ class Database:
 
         return cls.instance
 
-    def apply_json(self, payload: object):
+    def apply_json(self, payload: list[dict]):
         """Given a payload in JSON-LD format, apply it to the RDF database."""
 
         raise NotImplementedError()
