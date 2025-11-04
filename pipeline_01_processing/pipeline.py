@@ -7,7 +7,7 @@ from common.tokenize import tokenize_text
 from .tokens_to_rdf import tokens_to_rdf
 
 
-def run_pipeline(text: str) -> object:
+def run_pipeline(text: str) -> list[dict]:
     """
     Main function for data processing pipeline.
 
