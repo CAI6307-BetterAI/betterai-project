@@ -1,30 +1,24 @@
 """
-Schemas related to documents and positions within documents.
+Schemas related to retrieval sources.
+
+This schema is aligned with pipeline_02_retrieval/sources.py which
+emits compact document-like records derived from RDF query results.
 """
 
 import attr
 
 
 @attr.s
-class DocPosition:
-    """Represents a single location inside of a large document."""
-
-    line: int = attr.ib()
-    """Line number, 0 indexed."""
-
-    word: int = attr.ib()
-    """Word number inside of line, 0 indexed."""
-
-
-@attr.s
 class DocSource:
-    """Used to reference a specific area of a document."""
+    """Represents a single retrieved source item.
 
-    pdf_url: str = attr.ib()
-    """Full url to external pdf."""
+    Notes
+    -----
+    - `id`, `title`, and `content` are human-readable fields derived from RDF terms.
+    - `source_type` indicates the origin, e.g., "SPARQL_SELECT" or "RDF_TRIPLE".
+    """
 
-    start: DocPosition = attr.ib()
-    """Starting position of highlighed region in document."""
-
-    end: DocPosition = attr.ib()
-    """Ending position of highlighed region in document."""
+    id: str = attr.ib()
+    title: str = attr.ib()
+    content: str = attr.ib()
+    source_type: str = attr.ib()

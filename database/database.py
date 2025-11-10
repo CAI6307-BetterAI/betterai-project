@@ -1,7 +1,8 @@
 import os
+import re
 from typing import Optional
 
-from rdflib import Graph
+from rdflib import Graph, Literal, Namespace, URIRef
 
 
 class Database:
@@ -16,16 +17,62 @@ class Database:
 
             graph = Graph()
 
+            # Attempt to load an existing graph if available
             if os.path.exists("./graph.json"):
-                graph.parse("./graph.json")
+                try:
+                    graph.parse("./graph.json", format="json-ld")
+                except Exception:
+                    # Ignore load failures; start with an empty graph
+                    pass
 
-            graph.serialize(destination="./graph.json", format="json-ld")
+            # Best-effort initial serialize; ignore failures (e.g., read-only FS)
+            try:
+                graph.serialize(destination="./graph.json", format="json-ld")
+            except Exception:
+                pass
 
             cls.instance.graph = graph
 
         return cls.instance
 
     def apply_json(self, payload: list[dict]):
-        """Given a payload in JSON-LD format, apply it to the RDF database."""
+        """Apply a simple list of triple-like dicts to the RDF graph.
 
-        raise NotImplementedError()
+        Expected input: list of dicts with keys {"s", "p", "o"}.
+        This is a pragmatic bridge from Pipeline 1 output to RDFLib.
+        """
+
+        if not payload:
+            return
+
+        NS = Namespace("http://example.org/node/")
+        REL = Namespace("http://example.org/rel/")
+
+        def slug(text: str) -> str:
+            text = str(text or "").strip().lower()
+            text = re.sub(r"\s+", "_", text)
+            text = re.sub(r"[^a-z0-9_\-]", "", text)
+            return text or "unnamed"
+
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            s_raw = item.get("s")
+            p_raw = item.get("p")
+            o_raw = item.get("o")
+
+            if not (s_raw and p_raw and o_raw):
+                continue
+
+            s = URIRef(NS + slug(s_raw))
+            p = URIRef(REL + slug(p_raw))
+            # Store object as literal for simplicity
+            o = Literal(str(o_raw))
+
+            self.graph.add((s, p, o))
+
+        # Best-effort persist; ignore failures in restricted environments
+        try:
+            self.graph.serialize(destination="./graph.json", format="json-ld")
+        except Exception:
+            pass

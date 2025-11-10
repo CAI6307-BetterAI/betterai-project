@@ -94,6 +94,12 @@ def summarize_rdf_result(result: Optional[Result]) -> str:
         return f"Failed to summarize RDF result: {error}"
 
 
+# Backwards-compatible shim for existing imports
+def result_to_summary(result: Optional[Result]) -> str:
+    """Compatibility wrapper that delegates to summarize_rdf_result."""
+    return summarize_rdf_result(result)
+
+
 # -------------------------------------------------------------------
 # Helper Functions
 # -------------------------------------------------------------------

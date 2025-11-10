@@ -2,43 +2,30 @@ from spacy.tokens.doc import Doc
 
 
 def tokens_to_rdf(doc: Doc) -> list[dict]:
-    """Convert list of tokens to an rdf graph structure."""
+    """Convert a spaCy Doc to a simple list of triples.
 
-    nodes = {}
+    Emits a minimal structure consumable by Database.apply_json:
+    [{"s": subject, "p": predicate, "o": object}, ...]
+    """
 
-    for noun in doc.noun_chunks:
-        node = {
-            "@id": noun.lemma_,
-        }
-
-        nodes[noun] = node
+    triples: list[dict] = []
 
     for sentence in doc.sents:
         verb = sentence.root
         subject = None
-        attribute = None
+        obj = None
 
         for child in verb.children:
             if child.dep_ == "nsubj":
                 subject = child
-            elif child.dep_ == "attr":
-                attribute = child
+            elif child.dep_ in {"attr", "dobj", "pobj"}:
+                obj = child
 
-        if not (subject and attribute):
-            continue
+        if subject and obj and verb.lemma_:
+            triples.append({
+                "s": subject.lemma_,
+                "p": verb.lemma_,
+                "o": obj.lemma_,
+            })
 
-        if subject not in nodes.keys():
-            # print('larger group:', list(subject.children))
-            nodes[subject] = {"@id": subject}
-            # print('subject vect:', subject.vector)
-
-        subject_node = nodes.get(subject)
-        # attribute_node = nodes.get(attribute)
-        # print("verb lemma:", verb.lemma_)
-        # print("subject node:", subject_node)
-
-        subject_node[verb.lemma_] = attribute
-
-    print("nodes:", nodes)
-
-    return nodes.values()
+    return triples

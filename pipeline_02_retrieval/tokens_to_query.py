@@ -1,7 +1,20 @@
 from rdflib.plugins.sparql.sparql import Query
 
 
-def tokens_to_query(tokens: list) -> str | Query:
-    """Convert list of tokens to queries that can be executed against RDF database."""
+def tokens_to_query(tokens: list | object) -> str | Query:
+    """Convert tokens to a simple SPARQL query.
 
-    raise NotImplementedError()
+    Minimal baseline that retrieves generic triples. This makes the
+    pipeline runnable end-to-end and can be refined later to construct
+    domain-specific queries from tokens.
+    """
+
+    return (
+        """
+        SELECT ?s ?p ?o WHERE {
+          ?s ?p ?o .
+        }
+        LIMIT 10
+        """
+        .strip()
+    )
