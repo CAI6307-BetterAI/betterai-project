@@ -50,6 +50,45 @@ JSONL format (fields per line):
 
 The runner computes Accuracy and Macro-F1, and can optionally attach retrieval summaries from the current KG.
 
+Compute additional metrics on the predictions JSONL:
+
+```sh
+python -m evaluation.compute_metrics --pred runs/pqa_eval.jsonl --k 5 \
+  --gold-entities-key gold_mesh --gold-pmids-key gold_pmids
+```
+
+Heuristic claim judging for faithfulness (optional):
+
+```sh
+python -m evaluation.judge_claims --input runs/pqa_eval.jsonl --output runs/pqa_eval_judged.jsonl --answer-key pred
+python -m evaluation.compute_metrics --pred runs/pqa_eval_judged.jsonl --k 5
+```
+
+### Metrics Overview
+
+- QA quality
+  - Accuracy: fraction of correct yes/no answers.
+  - Macro‑F1: average F1 over the "yes" and "no" classes (robust to imbalance).
+- Retrieval quality
+  - Coverage: fraction of samples with non‑empty `retrieval_sources`.
+  - Precision@k / Recall@k: correctness and completeness among top‑k retrieved items.
+  - MRR: how early the first correct item appears (higher is better).
+  - NDCG: rank quality rewarding correct items near the top.
+  - Note: to compute P@k/R@k/MRR/NDCG, include gold lists in your predictions JSONL, e.g. `gold_mesh` (MeSH IDs) and/or `gold_pmids` (PMIDs). Pass their keys via `--gold-entities-key` / `--gold-pmids-key`.
+- Faithfulness (hallucination proxy)
+  - Heuristic judge splits the answer into sentence‑like claims and checks word‑overlap against source titles/contents.
+  - Outputs per‑claim verdicts: Supported or NEI (Not‑Enough‑Info).
+  - Aggregates:
+    - Hallucination Rate = (Contradicted + NEI) ÷ total claims (in heuristic, we only produce NEI/Supported).
+    - Factual Precision = Supported ÷ total claims.
+
+### Typical Flow
+
+1. Run evaluation to produce predictions JSONL (optionally with `--with_retrieval`).
+2. Compute QA + retrieval metrics with `evaluation.compute_metrics`.
+3. (Optional) Run `evaluation.judge_claims` to annotate claims, then re‑run `evaluation.compute_metrics` to include faithfulness scores.
+
+
 ## Datasets Used
 
 Below are the datasets used for evaluation and benchmarking hallucination reduction in RDF-grounded LMs.
