@@ -34,6 +34,22 @@ Run main.py
 uv run main.py
 ```
 
+## Evaluation
+
+Run a simple baseline on a PubMedQA-style JSONL:
+
+```sh
+uv run evaluation/run_eval.py --dataset path/to/dev.jsonl --output runs/pqa_eval.jsonl --model heuristic --with_retrieval
+```
+
+JSONL format (fields per line):
+- `id`: sample id
+- `question`: text
+- `answer` or `final_decision`: yes/no (case-insensitive)
+- `context`: optional text
+
+The runner computes Accuracy and Macro-F1, and can optionally attach retrieval summaries from the current KG.
+
 ## Datasets Used
 
 Below are the datasets used for evaluation and benchmarking hallucination reduction in RDF-grounded LMs.

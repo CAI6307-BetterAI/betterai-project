@@ -43,8 +43,9 @@ def summarize_rdf_result(result: Optional[Result]) -> str:
         return f"ASK query result: {verdict}"
 
     # --- Step 3: Handle graph-like results (CONSTRUCT / DESCRIBE) ---
-    if hasattr(result, "graph"):
-        triples = list(result.graph)
+    if getattr(result, "type", None) in {"CONSTRUCT", "DESCRIBE"}:
+        g = getattr(result, "graph", None)
+        triples = list(g) if g is not None else []
         if not triples:
             return "No RDF triples returned."
 

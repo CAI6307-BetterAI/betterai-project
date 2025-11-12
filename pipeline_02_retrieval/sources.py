@@ -130,8 +130,11 @@ def result_to_sources(res: Result) -> List[DocSource]:
     docs: List[DocSource] = []
 
     # --- 2️ Handle CONSTRUCT/DESCRIBE queries ---
-    if hasattr(res, "graph"):
-        for s, p, o in res.graph:
+    if getattr(res, "type", None) in {"CONSTRUCT", "DESCRIBE"}:
+        g = getattr(res, "graph", None)
+        if g is None:
+            return []
+        for s, p, o in g:
             doc = DocSource(
                 id=_format_term(s),
                 title=_format_term(p),

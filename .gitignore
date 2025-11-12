@@ -54,3 +54,7 @@ graph.hdt
 graph.json
 
 playground/
+ 
+# Project data (keep local, do not track large datasets)
+data/**/*.jsonl
+data/pubmedqa/*.jsonl
