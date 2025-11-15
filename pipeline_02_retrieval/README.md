@@ -170,17 +170,10 @@ DB_PORT=5432
 # Get your key from: https://studio.ai21.com/
 AI21_API_KEY=your_ai21_api_key_here
 ```
-JHONATHAN's SETUP (DONT SHARRRREEE)
-
-
-AI21_API_KEY=07309e04-89f4-49b1-9ffa-8e9667e67038
-DB_NAME=patient_records
-DB_USER=postgres
-DB_PASS=68737817Jh7!
-DB_HOST=localhost
-DB_PORT=5432
 
 **Note:** The AI21 API key is optional. Without it, patient context will still be displayed but queries won't be AI-enhanced.
+
+**IMPORTANT:** Never commit your actual credentials to the README or any file in version control. Keep them only in your `.env` file!
 
 ---
 
