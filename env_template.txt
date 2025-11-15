@@ -1,0 +1,13 @@
+# Database Configuration for Patient Records
+# Copy this file to .env and fill in your actual values
+
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASS=your_database_password
+DB_HOST=localhost
+DB_PORT=5432
+
+# AI21 API Key for Jamba AI (optional - system works without it)
+# Get your API key from: https://studio.ai21.com/
+AI21_API_KEY=your_ai21_api_key_here
+
