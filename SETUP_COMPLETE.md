@@ -239,3 +239,4 @@ uv run python main.py
 
 You can start using it right now! 🎉
 
+
