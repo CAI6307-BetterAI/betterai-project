@@ -1,6 +1,6 @@
 {
   "python.analysis.typeCheckingMode": "off",
-  "python.analysis.autoImportCompletions": false,
+  "python.analysis.autoImportCompletions": true,
   "python.analysis.inlayHints.callArgumentNames": "off",
   "python.analysis.packageIndexDepths": [],
   "[python]": {
