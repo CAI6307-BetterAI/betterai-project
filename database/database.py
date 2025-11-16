@@ -4,6 +4,9 @@ from typing import Optional
 
 from rdflib import Graph, Literal, Namespace, URIRef
 
+from database.triple import Triple
+from database.tripleset import TripleSet
+
 
 class Database:
     """Utility class to manage RDF graph."""
@@ -35,7 +38,7 @@ class Database:
 
         return cls.instance
 
-    def apply_json(self, payload: list[dict]):
+    def apply_tripleset(self, payload: TripleSet):
         """Apply a simple list of triple-like dicts to the RDF graph.
 
         Expected input: list of dicts with keys {"s", "p", "o"}.
@@ -55,11 +58,11 @@ class Database:
             return text or "unnamed"
 
         for item in payload:
-            if not isinstance(item, dict):
+            if not isinstance(item, Triple):
                 continue
-            s_raw = item.get("s")
-            p_raw = item.get("p")
-            o_raw = item.get("o")
+            s_raw = item.subject
+            p_raw = item.predicate
+            o_raw = item.object
 
             if not (s_raw and p_raw and o_raw):
                 continue
