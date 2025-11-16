@@ -20,7 +20,7 @@ def main():
     print("RDF input structure:", out_1)
 
     # Apply rdf structure to database
-    db.apply_json(out_1)
+    db.apply_tripleset(out_1)
 
     # Execute query against database
     out_2 = run_pipeline_2(db=db, text=query_text)

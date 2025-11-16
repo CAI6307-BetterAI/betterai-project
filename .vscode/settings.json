@@ -1,6 +1,6 @@
 {
   "python.analysis.typeCheckingMode": "off",
-  "python.analysis.autoImportCompletions": true,
+  "python.analysis.autoImportCompletions": false,
   "python.analysis.inlayHints.callArgumentNames": "off",
   "python.analysis.packageIndexDepths": [],
   "[python]": {
@@ -11,7 +11,7 @@
       "source.organizeImports": "explicit",
       "source.unusedImports": "explicit",
       "source.fixAll": "explicit"
-    },
+    }
   },
-  "isort.args": ["--profile", "black"],
+  "isort.args": ["--profile", "black"]
 }
