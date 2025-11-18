@@ -18,8 +18,32 @@ PRED_MAP = {
 
 # Mentions we never want to treat as the subject
 _STOP_MENTIONS = {
-    "which enzyme", "what", "which", "who", "where", "when", "why",
-    "enzyme", "drug", "medicine",
+    "which enzyme",
+    "what",
+    "which",
+    "who",
+    "where",
+    "when",
+    "why",
+    "enzyme",
+    "drug",
+    "medicine",
+    # Additional generic/question words we never want as subject mentions
+    "do",
+    "does",
+    "did",
+    "is",
+    "are",
+    "was",
+    "were",
+    "can",
+    "could",
+    "would",
+    "should",
+    "may",
+    "might",
+    "will",
+    "shall",
 }
 
 # --- Intent detection patterns (your logic) -----------------------------------
@@ -100,7 +124,8 @@ def _extract_mentions(doc: Doc) -> list[str]:
 
     def _add(s: str, pos: int):
         s = s.strip()
-        if not (1 <= len(s) <= 80):
+        # Ignore very short fragments; they tend to be auxiliaries like "Do", "Is".
+        if not (3 <= len(s) <= 80):
             return
         k = s.lower()
         if k in seen_lower:
@@ -180,17 +205,13 @@ def _wrap_prefixes(q: str) -> str:
 def _subject_binding_inline_filter(mention: str) -> str:
     """
     Bind ?subj by label using inline FILTER (no sub-SELECT).
-    Tries exact case-insensitive OR regex contains.
+    Uses a simple case-insensitive CONTAINS to avoid regex-related parse issues.
     """
     m = _sanitize_mention(mention)
-    pattern = re.escape(m)
     return dedent(
         f"""
           ?subj rdfs:label ?lbl .
-          FILTER(
-            LCASE(STR(?lbl)) = LCASE("{m}")
-            || regex(STR(?lbl), "{pattern}", "i")
-          )
+          FILTER( CONTAINS(LCASE(STR(?lbl)), LCASE("{m}")) )
         """
     ).strip()
 

@@ -12,12 +12,14 @@ import os
 import sys
 from typing import Any, Dict, List
 
+from tqdm import tqdm
+
 # Ensure project root is on sys.path when executed as a script
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from evaluation.baselines import always_yes, heuristic_yesno
+from evaluation.baselines import always_yes, heuristic_yesno, ml_yesno, transformer_yesno
 from evaluation.load_pubmedqa import load_pubmedqa
 from evaluation.metrics import accuracy_and_macro_f1
 from evaluation.utils import write_jsonl
@@ -29,6 +31,10 @@ def get_model(name: str):
         return always_yes
     if name in {"heuristic", "rule"}:
         return heuristic_yesno
+    if name in {"ml", "tfidf", "ml_yesno"}:
+        return ml_yesno
+    if name in {"transformer", "hf"}:
+        return transformer_yesno
     raise ValueError(f"Unknown model: {name}")
 
 
@@ -36,7 +42,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", required=True, help="Path to PubMedQA-style JSONL")
     ap.add_argument("--output", required=True, help="Path to write predictions JSONL")
-    ap.add_argument("--model", default="heuristic", help="Model name: heuristic|always_yes")
+    ap.add_argument(
+        "--model",
+        default="heuristic",
+        help="Model name: heuristic|always_yes|ml|transformer",
+    )
     ap.add_argument("--with_retrieval", action="store_true", help="Run KG retrieval and save context")
     args = ap.parse_args()
 
@@ -45,13 +55,11 @@ def main():
     db = None
 
     outputs: List[Dict[str, Any]] = []
-    for s in samples:
-        pred = model(s)
+    for s in tqdm(samples, total=len(samples), desc="Evaluating"):
         row: Dict[str, Any] = {
             "id": s.get("id"),
             "question": s["question"],
             "gold": s["gold"],
-            "pred": pred,
         }
         if args.with_retrieval:
             # Lazy import to avoid dependency issues when not retrieving
@@ -62,6 +70,14 @@ def main():
             ret = retrieve_for_question(db, s["question"])
             row["retrieval_summary"] = ret.get("summary")
             row["retrieval_sources"] = ret.get("sources")
+            # Enrich sample passed to the model with retrieval summary
+            enriched_sample = dict(s)
+            enriched_sample["retrieval_summary"] = ret.get("summary")
+            pred = model(enriched_sample)
+        else:
+            pred = model(s)
+
+        row["pred"] = pred
         row["correct"] = bool(s["gold"] == pred)
         outputs.append(row)
 
