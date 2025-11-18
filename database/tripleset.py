@@ -20,7 +20,7 @@ class TripleSet:
 
     @staticmethod
     def _slot_query(
-        callable: Callable[["TripleSet", Optional[Slot], Optional[Slot], Optional[Slot]], T],
+        callable: Callable[["TripleSet", Optional[Slot], Optional[Slot], Optional[Slot], bool], T],
     ):
         """Allow input of raw values into function, and convert them to slots."""
 
@@ -29,12 +29,13 @@ class TripleSet:
             subject: Optional[SlotLike] = None,
             predicate: Optional[SlotLike] = None,
             object: Optional[SlotLike] = None,
+            root: bool = False,
         ) -> T:
             subject = Slot(subject) if subject is not None else None
             predicate = Slot(predicate) if predicate is not None else None
             object = Slot(object) if object is not None else None
 
-            return callable(self, subject, predicate, object)
+            return callable(self, subject, predicate, object, root=root)
 
         return wrapper
 
@@ -44,8 +45,14 @@ class TripleSet:
         subject: Optional[Slot] = None,
         predicate: Optional[Slot] = None,
         object: Optional[Slot] = None,
+        root=False,
     ) -> Triple | None:
-        """Find first matching triple or none."""
+        """
+        Find first matching triple or none.
+
+        If root=True, will swap out subject for the top most parent node
+        if applicable. Ex: "HTN" would be replaced with "hypertension".
+        """
 
         assert (
             subject is not None or predicate is not None or object is not None
