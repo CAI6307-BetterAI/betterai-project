@@ -5,7 +5,6 @@ from spacy.tokens.doc import Doc
 from spacy.tokens.span import Span
 from spacy.tokens.token import Token
 
-from database.triple import Triple
 from database.tripleset import TripleSet
 
 
@@ -13,7 +12,8 @@ from database.tripleset import TripleSet
 class TokenParser:
     """Convert tokens to different structures."""
 
-    doc: Doc
+    doc: Doc = attrs.field()
+    tripleset = attrs.field(init=False, factory=lambda: TripleSet([]))
 
     def _repr_token(self, token: Token):
         return f"<{token} | pos:{token.pos_}, dep:{token.dep_}>"
@@ -28,6 +28,18 @@ class TokenParser:
 
         return chunks
 
+    def _parse_token(self, token: Token, parent: Optional[Token] = None):
+        """Process token."""
+
+        if token.dep_ == "appos":
+            # Appositional modifier, like "HTN" for Hypertension
+            self.tripleset.create(parent, "alias", token)
+            self.tripleset.create(token, "alias for", parent, get_root=False)
+
+        if list(token.children):
+            for child in token.children:
+                self._parse_token(child, parent=token)
+
     def _parse_span(
         self,
         span: Span,
@@ -37,7 +49,7 @@ class TokenParser:
         """Process groups of words, like sentences or sub groups."""
 
         noun_chunks = noun_chunks or {}
-        triples: list[Triple] = []
+        # triples: list[Triple] = []
 
         subject = None
         verb = span.root
@@ -51,8 +63,8 @@ class TokenParser:
                 obj = noun_chunks.get(child, child)
             elif child.dep_ == "nsubjpass":
                 subject = head
-            elif child.dep_ == "appos":
-                print('appos:', child)
+
+            self._parse_token(child, parent=verb)
 
             if child.pos_ == "NOUN":
                 for inner_child in child.children:
@@ -65,27 +77,22 @@ class TokenParser:
                                 sub_noun = noun_chunks.get(inner_sub_child, inner_sub_child)
 
                         if sub_verb and sub_noun and subject:
-                            triples.append(Triple(subject.lemma_, sub_verb.lemma_, sub_noun.lemma_))
+                            self.tripleset.create(subject, sub_verb, sub_noun)
 
         if subject and obj and verb.lemma_:
-            triples.append(Triple(subject.lemma_, verb.lemma_, obj.lemma_))
+            self.tripleset.create(subject, verb, obj)
 
-        return triples, head
+        return head
 
-    def get_rdf_triples(self):
+    def parse_rdf_triples(self):
         """Return list of objects representing triples."""
-
-        triples: list[Triple] = []
 
         noun_chunks = self._create_noun_chunks()
         head: Token | Span | None = None
 
         # Primary iteration through each sentence - O(n)
         for sentence in self.doc.sents:
-            res_triples, head = self._parse_span(sentence, head=head, noun_chunks=noun_chunks)
-            triples = [*triples, *res_triples]
-
-        return triples
+            head = self._parse_span(sentence, head=head, noun_chunks=noun_chunks)
 
 
 def tokens_to_rdf(doc: Doc) -> TripleSet:
@@ -96,6 +103,6 @@ def tokens_to_rdf(doc: Doc) -> TripleSet:
     """
 
     parser = TokenParser(doc=doc)
-    triples = parser.get_rdf_triples()
+    parser.parse_rdf_triples()
 
-    return TripleSet(triples)
+    return parser.tripleset
