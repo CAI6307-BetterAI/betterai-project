@@ -4,7 +4,7 @@ import attrs
 
 # Slot = Union[str | "Triple"]
 
-SlotPrimitive = Union[str, "Triple"]
+SlotPrimitive = Union[str, int, "Triple"]
 
 
 @attrs.define
@@ -16,6 +16,8 @@ class Slot:
     def __repr__(self):
         if isinstance(self.value, str):
             return f'"{self.value}"'
+        elif isinstance(self.value, int):
+            return self.value
         else:
             return f"({self.value})"
 
@@ -51,7 +53,7 @@ class Triple:
 
     def __repr__(self):
         return (
-            f'<subject: "{self.subject}", predicate: "{self.predicate}", object: "{self.object}">'
+            f'<subject: {self.subject}, predicate: {self.predicate}, object: {self.object}>'
         )
 
     def __eq__(self, value):

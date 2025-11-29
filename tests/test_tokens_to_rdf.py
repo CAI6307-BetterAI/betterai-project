@@ -1,5 +1,8 @@
+"""
+Full integration tests for tokenization.
+"""
+
 from common.tokenize import tokenize_text
-from database.tripleset import TripleSet
 from pipeline_01_processing.tokens_to_rdf import tokens_to_rdf
 
 
@@ -8,14 +11,12 @@ def test_generate_noun_attributes():
 
     source_text = (
         "High blood pressure is a common condition that affects the body's arteries. "
-        "It's also called hypertension. If you have high blood pressure, "
-        "the force of the blood pushing against the artery walls is consistently too high. "
-        "The heart has to work harder to pump blood."
+        "It's also called hypertension."
     )
 
     doc = tokenize_text(source_text)
-    rdf_rep = tokens_to_rdf(doc)
-    tripleset = TripleSet(rdf_rep)
+    tripleset = tokens_to_rdf(doc)
+    print(tripleset)
 
     bp = tripleset.filter(subject="high blood pressure")
     assert bp.count() >= 3, bp
@@ -28,3 +29,52 @@ def test_generate_noun_attributes():
 
     t_affects = bp.get_or_none(predicate="affect", object="the body's artery")
     assert t_affects is not None
+
+
+def test_metrics_resolution():
+    """Should resolve assignment statements that involve numerical values."""
+
+    # Ref: https://www.ncbi.nlm.nih.gov/books/NBK539859/
+    source_text = (
+        "The current definition of hypertension (HTN) is systolic blood pressure (SBP) values of 130 mm Hg "
+        "or more and/or diastolic blood pressure (DBP) of more than 80 mm Hg. Hypertension ranks among the most "
+        "common chronic medical condition characterized by a persistent elevation in arterial pressure."
+    )
+
+    doc = tokenize_text(source_text)
+    tripleset = tokens_to_rdf(doc)
+    print('tripleset:', tripleset)
+
+    # Check aliases
+    hypertension = tripleset.get_or_none(subject="hypertension", predicate="alias", object="HTN")
+    assert hypertension is not None
+
+    systolic = tripleset.get_or_none(
+        subject="systolic blood pressure", predicate="alias", object="SBP"
+    )
+    assert systolic is not None
+
+    diastolic = tripleset.get_or_none(
+        subject="diastolic blood pressure", predicate="alias", object="DBP"
+    )
+    assert diastolic is not None
+
+    # Check units
+    systolic_unit = tripleset.get_or_none(
+        subject="systolic blood pressure", predicate="unit", object="mm Hg"
+    )
+    assert systolic_unit is not None
+
+    diastolic_unit = tripleset.get_or_none(
+        subject="diastolic blood pressure", predicate="unit", object="mm Hg"
+    )
+    assert diastolic_unit is not None
+
+    # Check metrics
+    hypertension_set = tripleset.filter(subject="hypertension")
+
+    t_sys = hypertension_set.get_or_none(predicate="systolic blood pressure", object=130)
+    assert t_sys is not None
+
+    t_dia = hypertension_set.get_or_none(predicate="diastolic blood pressure", object=80)
+    assert t_dia is not None

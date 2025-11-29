@@ -1,6 +1,7 @@
 import contractions
 import spacy
 from spacy.tokens.doc import Doc
+from spacy.tokens.token import Token
 
 
 def _load_nlp():
@@ -53,4 +54,16 @@ def tokenize_text(text: str, enable_bert: bool = False) -> Doc:
             pass
 
     text = contractions.fix(text)
-    return nlp(text)
+
+    # nlp.add_pipe("experimental_coref")
+    # nlp.initialize()
+
+    doc = nlp(text)
+
+    # Add custom attribute "noun_chunk" to tokens
+    Token.set_extension("noun_chunk", default=None, force=True)
+
+    for noun in doc.noun_chunks:
+        noun.root._.noun_chunk = noun
+
+    return doc
