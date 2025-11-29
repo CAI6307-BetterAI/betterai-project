@@ -16,6 +16,7 @@ def test_generate_noun_attributes():
 
     doc = tokenize_text(source_text)
     tripleset = tokens_to_rdf(doc)
+    print(tripleset)
 
     bp = tripleset.filter(subject="high blood pressure")
     assert bp.count() >= 3, bp
@@ -42,6 +43,7 @@ def test_metrics_resolution():
 
     doc = tokenize_text(source_text)
     tripleset = tokens_to_rdf(doc)
+    print('tripleset:', tripleset)
 
     # Check aliases
     hypertension = tripleset.get_or_none(subject="hypertension", predicate="alias", object="HTN")
