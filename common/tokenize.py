@@ -3,8 +3,36 @@ import spacy
 from spacy.tokens.doc import Doc
 
 
+def _load_nlp():
+    """
+    Try to load a biomedical model if available; otherwise fall back to en_core_web_sm.
+    """
+    # SciSpaCy small model name; adjust if a different biomedical model is installed.
+    candidates = ["en_core_sci_sm", "en_core_web_sm"]
+    for name in candidates:
+        try:
+            nlp = spacy.load(name)
+            # Best-effort: add abbreviation detector and linker if present
+            try:
+                if "abbreviation_detector" not in nlp.pipe_names:
+                    nlp.add_pipe("abbreviation_detector")
+            except Exception:
+                pass
+            try:
+                if "scispacy_linker" not in nlp.pipe_names:
+                    nlp.add_pipe("scispacy_linker")
+            except Exception:
+                # Not fatal if linker is unavailable
+                pass
+            return nlp
+        except Exception:
+            continue
+    # Last resort: blank English pipeline
+    return spacy.blank("en")
+
+
 # Load the spaCy model once at import time and reuse it.
-_NLP = spacy.load("en_core_web_sm")
+_NLP = _load_nlp()
 
 
 def tokenize_text(text: str, enable_bert: bool = False) -> Doc:

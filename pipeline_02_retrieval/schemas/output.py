@@ -16,3 +16,6 @@ class Pipeline2Output:
 
     sources: list[DocSource] = attr.ib()
     """Sources representing physical data used to generate summary."""
+
+    grounded_answer: str | None = attr.ib(default=None)
+    """Optional grounded answer with citations/refusal."""

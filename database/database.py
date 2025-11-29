@@ -3,6 +3,7 @@ import re
 from typing import Optional
 
 from rdflib import Graph, Literal, Namespace, URIRef
+from rdflib.namespace import RDFS
 from database.triple import Triple
 from database.tripleset import TripleSet
 
@@ -71,6 +72,11 @@ class Database:
             o = Literal(str(o_raw))
 
             self.graph.add((s, p, o))
+            # Expose subject as an rdfs:label for label-based binding in retrieval
+            try:
+                self.graph.add((s, RDFS.label, Literal(str(s_raw))))
+            except Exception:
+                pass
 
         # Best-effort persist; ignore failures in restricted environments
         try:
@@ -103,6 +109,7 @@ class Database:
             s_raw = item.get("s")
             p_raw = item.get("p")
             o_raw = item.get("o")
+            label_raw = item.get("label") or s_raw
 
             if not (s_raw and p_raw and o_raw):
                 continue
@@ -113,6 +120,12 @@ class Database:
             o = Literal(str(o_raw))
 
             self.graph.add((s, p, o))
+            # Also add a best-effort rdfs:label for the subject to enable label binding
+            try:
+                if label_raw:
+                    self.graph.add((s, RDFS.label, Literal(str(label_raw))))
+            except Exception:
+                pass
 
         # Best-effort persist; ignore failures in restricted environments
         try:

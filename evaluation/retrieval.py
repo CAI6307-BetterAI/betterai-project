@@ -12,7 +12,17 @@ def retrieve_for_question(db, question: str) -> Dict[str, Any]:
     out = run_retrieval_pipeline(db=db, text=question)
     # Convert sources to plain dicts for JSON output
     sources = [
-        {"id": s.id, "title": s.title, "content": s.content, "source_type": s.source_type}
+        {
+            "id": s.id,
+            "title": s.title,
+            "content": s.content,
+            "source_type": s.source_type,
+            "score": s.score,
+        }
         for s in (out.sources or [])
     ]
-    return {"summary": out.summary, "sources": sources}
+    return {
+        "summary": out.summary,
+        "grounded_answer": getattr(out, "grounded_answer", None),
+        "sources": sources,
+    }

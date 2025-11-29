@@ -1,20 +1,12 @@
 from __future__ import annotations
 
-from textwrap import dedent
 import re
+from textwrap import dedent
 
 from spacy.tokens import Doc
 
-EX = "http://example.org/med#"
-
-PRED_MAP = {
-    "mechanism_of_action": f"<{EX}hasMechanismOfAction>",
-    "indication":          f"<{EX}indicatedFor>",
-    "contraindication":    f"<{EX}contraindicatedIn>",
-    "adverse_effect":      f"<{EX}hasAdverseEffect>",
-    "dose":                f"<{EX}recommendedDose>",
-    "drug_target":         f"<{EX}targets>",
-}
+# Use the same prefix as the ingestion pipeline to avoid mismatches
+REL = "http://example.org/rel/"
 
 # Mentions we never want to treat as the subject
 _STOP_MENTIONS = {
@@ -197,23 +189,67 @@ def _wrap_prefixes(q: str) -> str:
     return dedent(
         f"""
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX rel: <{REL}>
         {q.strip()}
         """
     ).strip()
 
 
-def _subject_binding_inline_filter(mention: str) -> str:
+def _extract_kb_ids(doc: Doc) -> list[str]:
     """
-    Bind ?subj by label using inline FILTER (no sub-SELECT).
-    Uses a simple case-insensitive CONTAINS to avoid regex-related parse issues.
+    Collect KB IDs from entities if available (e.g., SciSpaCy linker).
+    """
+    ids: list[str] = []
+    seen: set[str] = set()
+    for ent in getattr(doc, "ents", []) or []:
+        kb_id = getattr(ent, "kb_id_", "") or ""
+        if kb_id:
+            k = kb_id.strip()
+            if k and k not in seen:
+                seen.add(k)
+                ids.append(k)
+        # scispacy_linker exposes ent._.kb_ents as list of (id, score)
+        if hasattr(ent._, "kb_ents"):
+            for kb, _score in getattr(ent._, "kb_ents", []) or []:
+                if kb and kb not in seen:
+                    seen.add(kb)
+                    ids.append(kb)
+    return ids
+
+
+def _subject_binding_inline_filter(mention: str, kb_ids: list[str] | None = None) -> str:
+    """
+    Bind ?subj by label, and optionally by known KB IDs (e.g., MeSH codes).
     """
     m = _sanitize_mention(mention)
-    return dedent(
-        f"""
-          ?subj rdfs:label ?lbl .
-          FILTER( CONTAINS(LCASE(STR(?lbl)), LCASE("{m}")) )
-        """
-    ).strip()
+    blocks = [
+        dedent(
+            f"""
+            {{
+              ?subj rdfs:label ?lbl .
+              FILTER( CONTAINS(LCASE(STR(?lbl)), LCASE("{m}")) )
+            }}
+            """
+        ).strip()
+    ]
+
+    kb_ids = kb_ids or []
+    for kb in kb_ids:
+        kb_clean = _sanitize_mention(kb)
+        if not kb_clean:
+            continue
+        blocks.append(
+            dedent(
+                f"""
+                {{
+                  ?subj rel:has_mesh_id ?mid .
+                  FILTER( LCASE(STR(?mid)) = LCASE("{kb_clean}") )
+                }}
+                """
+            ).strip()
+        )
+
+    return "\nUNION\n".join(blocks)
 
 
 # --- Main: Doc → SPARQL query -------------------------------------------------
@@ -247,36 +283,58 @@ def tokens_to_query(tokens: Doc) -> str:
     # 3) Detect intent from the raw text
     intent = _detect_intent(text)
 
+    # 3.5) Collect KB IDs from entities (if linker present)
+    kb_ids = _extract_kb_ids(tokens)
+
     # 4) Choose the best subject mention
     chosen = _pick_best_mention(mentions)
     if not chosen:
         # Harmless always-empty query if we couldn't find a subject
         return _wrap_prefixes("SELECT ?answer WHERE { VALUES ?answer { } }")
 
-    subj_bind = _subject_binding_inline_filter(chosen)
+    subj_bind = _subject_binding_inline_filter(chosen, kb_ids=kb_ids)
 
-    # 5) If we know the intent, map it to a predicate and query for answers
-    if intent in PRED_MAP:
-        pred = PRED_MAP[intent]
-        body = dedent(
-            f"""
-            SELECT ?answer ?answerLabel WHERE {{
-              {subj_bind}
-              ?subj {pred} ?answer .
-              OPTIONAL {{ ?answer rdfs:label ?answerLabel . }}
-            }}
-            LIMIT 50
-            """
-        )
-        return _wrap_prefixes(body)
+    # 5) Build a filtered block (intent-aware) and a general fallback block.
+    #    This avoids empty results when intent-specific predicates are missing.
+    intent_filters = []
+    if intent:
+        # Use simple keyword filters over predicate IRIs to stay schema-agnostic.
+        intent_kw = intent.replace("_", " ")
+        for kw in intent_kw.split():
+            kw = kw.strip()
+            if not kw:
+                continue
+            intent_filters.append(f'CONTAINS(LCASE(STR(?predicate)), "{kw.lower()}")')
 
-    # 6) Fallback: explore outgoing edges from the subject
-    body = dedent(
+    intent_filter_expr = " || ".join(intent_filters) if intent_filters else ""
+
+    intent_block = dedent(
         f"""
-        SELECT ?predicate ?object ?objectLabel WHERE {{
+        {{
           {subj_bind}
           ?subj ?predicate ?object .
           OPTIONAL {{ ?object rdfs:label ?objectLabel . }}
+          {"FILTER(" + intent_filter_expr + ")" if intent_filter_expr else ""}
+        }}
+        """
+    ).strip()
+
+    fallback_block = dedent(
+        f"""
+        {{
+          {subj_bind}
+          ?subj ?predicate ?object .
+          OPTIONAL {{ ?object rdfs:label ?objectLabel . }}
+        }}
+        """
+    ).strip()
+
+    body = dedent(
+        f"""
+        SELECT ?predicate ?object ?objectLabel WHERE {{
+          {intent_block}
+          UNION
+          {fallback_block}
         }}
         LIMIT 100
         """
