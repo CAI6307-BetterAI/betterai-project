@@ -22,3 +22,5 @@ class DocSource:
     title: str = attr.ib()
     content: str = attr.ib()
     source_type: str = attr.ib()
+    # Optional confidence/relevance score (higher is better).
+    score: float | None = attr.ib(default=None)

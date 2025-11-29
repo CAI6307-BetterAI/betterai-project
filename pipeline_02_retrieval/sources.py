@@ -139,7 +139,8 @@ def result_to_sources(res: Result) -> List[DocSource]:
                 id=_format_term(s),
                 title=_format_term(p),
                 content=_format_term(o),
-                source_type="RDF_TRIPLE"
+                source_type="RDF_TRIPLE",
+                score=None,
             )
             docs.append(doc)
         return docs
@@ -165,7 +166,8 @@ def result_to_sources(res: Result) -> List[DocSource]:
                 id=uri or "unknown",
                 title=label or "(untitled)",
                 content=abstract or "",
-                source_type="SPARQL_SELECT"
+                source_type="SPARQL_SELECT",
+                score=None,
             )
             docs.append(doc)
 

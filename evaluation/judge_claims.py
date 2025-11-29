@@ -33,16 +33,34 @@ def content_words(s: str) -> List[str]:
     return [w.lower() for w in WORD_RE.findall(s)]
 
 
+NEG_CUES = {"no", "not", "never", "without", "lack", "lacks", "absent", "absence", "neither"}
+
+
+def _has_negation(text: str) -> bool:
+    return any(f" {cue} " in f" {text.lower()} " for cue in NEG_CUES)
+
+
 def judge_claim_against_sources(claim: str, sources: List[Dict[str, Any]], min_overlap: int = 3) -> str:
     cwords = set(content_words(claim))
     if not cwords:
         return "NEI"
+
+    claim_neg = _has_negation(claim)
+
+    verdict = "NEI"
     for src in sources or []:
         text = f"{src.get('title','')} {src.get('content','')}"
         swords = set(content_words(text))
-        if len(cwords & swords) >= min_overlap:
-            return "Supported"
-    return "NEI"
+        overlap = len(cwords & swords)
+        if overlap < min_overlap:
+            continue
+
+        src_neg = _has_negation(text)
+        if claim_neg != src_neg:
+            return "Contradicted"
+        verdict = "Supported"
+
+    return verdict
 
 
 def main():
@@ -85,4 +103,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
