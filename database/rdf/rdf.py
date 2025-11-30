@@ -4,17 +4,18 @@ from typing import Optional
 
 from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDFS
-from database.triple import Triple
-from database.tripleset import TripleSet
+
+from .triple import Triple
+from .tripleset import TripleSet
 
 
-class Database:
+class RDFDatabase:
     """Utility class to manage RDF graph."""
 
-    instance: Optional["Database"] = None
+    instance: Optional["RDFDatabase"] = None
     graph: Graph
 
-    def __new__(cls) -> "Database":
+    def __new__(cls) -> "RDFDatabase":
         if not cls.instance:
             cls.instance = super().__new__(cls)
 
@@ -47,15 +48,6 @@ class Database:
         if not payload:
             return
 
-        NS = Namespace("http://example.org/node/")
-        REL = Namespace("http://example.org/rel/")
-
-        def slug(text: str) -> str:
-            text = str(text or "").strip().lower()
-            text = re.sub(r"\s+", "_", text)
-            text = re.sub(r"[^a-z0-9_\-]", "", text)
-            return text or "unnamed"
-
         for item in payload:
             if not isinstance(item, Triple):
                 continue
@@ -66,15 +58,15 @@ class Database:
             if not (s_raw and p_raw and o_raw):
                 continue
 
-            s = URIRef(NS + slug(s_raw))
-            p = URIRef(REL + slug(p_raw))
-            # Store object as literal for simplicity
-            o = Literal(str(o_raw))
+            s = s_raw.to_rdf()
+            p = p_raw.to_rdf()
+            o = o_raw.to_rdf()
 
             self.graph.add((s, p, o))
             # Expose subject as an rdfs:label for label-based binding in retrieval
             try:
                 self.graph.add((s, RDFS.label, Literal(str(s_raw))))
+                self.graph.add((o, RDFS.label, Literal(str(o_raw))))
             except Exception:
                 pass
 

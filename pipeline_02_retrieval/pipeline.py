@@ -8,11 +8,12 @@ from collections import Counter, defaultdict
 from functools import lru_cache
 from typing import Optional
 
-from rdflib import Literal, Namespace, URIRef
+from rdflib import Literal, URIRef
 from rdflib.namespace import RDFS
 
 from common.tokenize import tokenize_text
-from database.database import Database
+from database.rdf.rdf import RDFDatabase
+
 # from pipeline_02_retrieval.patient_context import apply_patient_context
 from pipeline_02_retrieval.generation import generate_grounded_answer
 from pipeline_02_retrieval.schemas.doc import DocSource
@@ -23,7 +24,7 @@ from .schemas.output import Pipeline2Output
 from .tokens_to_query import tokens_to_query
 
 
-def run_pipeline(db: Database, text: str, patient_id: Optional[str] = None) -> Pipeline2Output:
+def run_pipeline(db: RDFDatabase, text: str, patient_id: Optional[str] = None) -> Pipeline2Output:
     """
     Main function for data retrieval pipeline.
 
@@ -54,7 +55,9 @@ def run_pipeline(db: Database, text: str, patient_id: Optional[str] = None) -> P
         # If the SPARQL query is malformed or execution fails, fall back to an empty result.
         # Log the offending query (truncated) to help with debugging.
         snippet = (query or "").replace("\n", " ")[:200]
-        print(f"[Retrieval] SPARQL query failed; returning empty result. Error: {e}. Query snippet: {snippet!r}")
+        print(
+            f"[Retrieval] SPARQL query failed; returning empty result. Error: {e}. Query snippet: {snippet!r}"
+        )
         res = None
 
     # Step 4: Get text summary from query result
@@ -89,7 +92,7 @@ def run_pipeline(db: Database, text: str, patient_id: Optional[str] = None) -> P
 # ---------------------------------------------------------------------------
 
 
-def _lexical_fallback_sources(db: Database, text: str, limit: int = 5) -> list[DocSource]:
+def _lexical_fallback_sources(db: RDFDatabase, text: str, limit: int = 5) -> list[DocSource]:
     """
     When SPARQL yields nothing, fall back to a simple lexical search over the graph's
     labels and literal objects. Scores use a lightweight BM25-style weighting.
