@@ -1,4 +1,3 @@
-import re
 from typing import Optional, Union
 
 import attrs
@@ -43,28 +42,23 @@ class Slot:
             return value == self.value
 
     def to_rdf(self):
-        return Literal(self.value)
+        if self.loc is not None:
+            source, start, end = self.loc
+            return URIRef(NS + source + f"?start={start}&end={end}")
+        else:
+            return Literal(self.value)
 
 
 class Node(Slot):
     """Represents the subject or object of a triple."""
 
-    def to_rdf(self):
-        if self.loc is not None:
-            source, start, end = self.loc
-            return URIRef(NS + source + f"?start={start}&end={end}")
-        else:
-            return super().to_rdf()
+    pass
 
 
 class Pred(Slot):
     """Represents the preposition part of a triple."""
 
-    def to_rdf(self):
-        text = str(self.value or "").strip().lower()
-        text = re.sub(r"\s+", "_", text)
-        text = re.sub(r"[^a-z0-9_\-]", "", text)
-        return URIRef(REL + text)
+    pass
 
 
 SlotLike = Union[Slot, SlotPrimitive]
