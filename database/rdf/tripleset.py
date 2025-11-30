@@ -172,11 +172,21 @@ class TripleSet:
 
         return self.nodes[text]
 
-    def create_triple(self, subject: Node, predicate: Pred, object: Node, get_root=True):
+    def create_triple(
+        self,
+        subject: Node,
+        predicate: Pred,
+        object: Node,
+        get_root=True,
+        loc: Optional[SlotLoc] = None,
+    ):
         """Creates a new rdf triple."""
 
         if get_root:
             subject = self._get_root_subject(subject)
+
+        if loc:
+            predicate.loc = loc
 
         triple = Triple(subject, predicate, object)
         self.triples.append(triple)

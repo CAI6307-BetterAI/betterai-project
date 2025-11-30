@@ -1,5 +1,6 @@
 from redis import Redis
 
+from common.get_source import get_triple_source
 from pipeline_01_processing.pipeline import run_pipeline
 
 
@@ -25,3 +26,10 @@ def test_correct_node_source(db: Redis):
     res = db.get("source:" + source_id)
     assert res is not None
     assert str(res) == source_text
+
+    # Check getting source from triple
+    triple_source = get_triple_source(bp, sentences_before=0, sentences_after=0)
+    assert (
+        triple_source
+        == "High blood pressure is a common condition that affects the body's arteries."
+    )

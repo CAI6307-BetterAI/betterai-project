@@ -17,9 +17,11 @@ class Slot:
     """Represents a single value in a triple."""
 
     value: SlotPrimitive
+    loc: Optional[SlotLoc] = None
 
-    def __init__(self, value: SlotPrimitive):
+    def __init__(self, value: SlotPrimitive, loc: Optional[SlotLoc] = None):
         self.value = value
+        self.loc = loc
 
     def __str__(self):
         if isinstance(self.value, str):
@@ -46,12 +48,6 @@ class Slot:
 
 class Node(Slot):
     """Represents the subject or object of a triple."""
-
-    loc: Optional[SlotLoc] = None
-
-    def __init__(self, value, loc: Optional[SlotLoc] = None):
-        super().__init__(value)
-        self.loc = loc
 
     def to_rdf(self):
         if self.loc is not None:

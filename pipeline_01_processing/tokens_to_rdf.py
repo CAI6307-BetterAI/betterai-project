@@ -5,7 +5,7 @@ from spacy.tokens.doc import Doc
 from spacy.tokens.span import Span
 from spacy.tokens.token import Token
 
-from database.rdf.triple import Node, Pred
+from database.rdf.triple import Node
 from database.rdf.tripleset import TripleSet
 
 
@@ -42,6 +42,27 @@ class TokenParser:
             for child in token.children:
                 self._parse_token(child, parent=token)
 
+    def _token_to_node(self, token: Token | Span):
+        """Create node from a token or span."""
+
+        return self.tripleset.get_or_create_node(token, self.source_id)
+
+    def _get_loc(self, *token_indexes):
+        """Get location tuple from token indexes."""
+        print('getting locations for:', token_indexes)
+
+        return (self.source_id, min(*token_indexes), max(*token_indexes))
+
+    def _add_triple(self, subject: Token, verb: Token, obj: Token, get_root=True):
+        """Create triple and add to tripleset."""
+
+        subject_n = self._token_to_node(subject)
+        verb_n = self._token_to_node(verb)
+        obj_n = self._token_to_node(obj)
+        loc = self._get_loc(subject.i, verb.i, obj.i)
+
+        return self.tripleset.create_triple(subject_n, verb_n, obj_n, get_root=get_root, loc=loc)
+
     def _parse_span(
         self,
         span: Span,
@@ -49,20 +70,17 @@ class TokenParser:
     ):
         """Process groups of words, like sentences or sub groups."""
 
-        subject: Optional[Node] = None
-        verb: Optional[Pred] = None
-        obj: Optional[Node] = None
-
-        if span.root:
-            verb = self.tripleset.create_predicate(span.root)
+        subject: Optional[Token] = None
+        verb: Token = span.root
+        obj: Optional[Token] = None
 
         for child in span.root.children:
             if child.dep_ == "nsubj":
-                subject = self.tripleset.get_or_create_node(child, self.source_id)
+                subject = child
                 head = subject
 
             elif child.dep_ in {"attr", "dobj", "pobj", "oprd"}:
-                obj = self.tripleset.get_or_create_node(child, self.source_id)
+                obj = child
 
             elif child.dep_ == "nsubjpass":
                 subject = head
@@ -73,20 +91,17 @@ class TokenParser:
                 for inner_child in child.children:
                     if inner_child.pos_ == "VERB":
                         sub_verb = inner_child
-                        sub_noun: Optional[Node] = None
+                        sub_noun: Optional[Token] = None
 
                         for inner_sub_child in sub_verb.children:
                             if inner_sub_child.pos_ == "NOUN":
-                                sub_noun = self.tripleset.get_or_create_node(
-                                    inner_sub_child, self.source_id
-                                )
+                                sub_noun = inner_sub_child
 
                         if sub_verb and sub_noun and subject:
-                            sub_verb = self.tripleset.create_predicate(sub_verb)
-                            self.tripleset.create_triple(subject, sub_verb, sub_noun)
+                            self._add_triple(subject, sub_verb, sub_noun)
 
         if subject and obj and verb:
-            self.tripleset.create_triple(subject, verb, obj)
+            self._add_triple(subject, verb, obj)
 
         return head
 
