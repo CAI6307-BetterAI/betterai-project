@@ -5,14 +5,11 @@ from database.rdf.triple import Triple
 from database.redis.redis import get_redis_db
 
 
-def get_triple_source(triple: Triple, sentences_before=1, sentences_after=1):
-    """Get source text surrounding triple location."""
+def get_source_text(
+    source_id: str, start_index: int, end_index: int, sentences_before=1, sentences_after=1
+):
+    """Get source text based on source id and token locations."""
 
-    if not triple.predicate.loc:
-        return None
-
-    # Location of triple is stored on the predicate
-    source_id, start, end = triple.predicate.loc
     source: Optional[str] = None
 
     with get_redis_db() as db:
@@ -22,11 +19,9 @@ def get_triple_source(triple: Triple, sentences_before=1, sentences_after=1):
         return None
 
     doc = tokenize_text(source)
-    print("len doc:", len(doc))
 
-    start_sent = doc[start].sent
-    print("end:", end)
-    end_sent = doc[end].sent
+    start_sent = doc[start_index].sent
+    end_sent = doc[end_index].sent
 
     start_token = doc[start_sent.start]
     end_token = doc[end_sent.end]
@@ -48,3 +43,17 @@ def get_triple_source(triple: Triple, sentences_before=1, sentences_after=1):
         end_token = doc[next_sentence.end]
 
     return doc[start_token.i : end_token.i].text
+
+
+def get_triple_source(triple: Triple, sentences_before=1, sentences_after=1):
+    """Get source text surrounding triple location."""
+
+    if not triple.predicate.loc:
+        return None
+
+    # Location of triple is stored on the predicate
+    source_id, start, end = triple.predicate.loc
+
+    return get_source_text(
+        source_id, start, end, sentences_before=sentences_before, sentences_after=sentences_after
+    )
