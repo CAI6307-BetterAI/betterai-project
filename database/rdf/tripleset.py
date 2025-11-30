@@ -5,7 +5,7 @@ import attrs
 from spacy.tokens.span import Span
 from spacy.tokens.token import Token
 
-from database.triple import Slot, SlotLike, SlotPrimitive, Triple
+from .triple import Node, Pred, Slot, SlotLike, SlotLoc, Triple
 
 T = TypeVar("T")
 
@@ -13,6 +13,7 @@ T = TypeVar("T")
 @attrs.define
 class TripleSet:
     triples: list[Triple]
+    nodes: dict[str, Node] = {}
 
     def __str__(self):
         return f"[{', '.join([triple.__str__() for triple in self.triples])}]"
@@ -130,42 +131,96 @@ class TripleSet:
     # Management Methods
     # ------------------------------------
 
-    def get_or_create(
-        self,
-        subject: Token | SlotPrimitive,
-        predicate: Token | SlotPrimitive,
-        object: Token | SlotPrimitive,
-        get_root=True,
-    ):
-        """Get one or create a new triple."""
+    def create_predicate(self, text: Token | Span | str):
+        """Create predicate slot for triple."""
 
-        if isinstance(subject, Token) or isinstance(subject, Span):
-            subject = subject.lemma_
+        if isinstance(text, Token) or isinstance(text, Span):
+            text = text.lemma_
+        else:
+            text = str(text)
 
-        if isinstance(predicate, Token or isinstance(predicate, Span)):
-            predicate = predicate.lemma_
+        return Pred(text)
 
-        if isinstance(object, Token) or isinstance(object, Span):
-            object = object.lemma_
+    def get_or_create_node(self, text: Token | Span | str, source_id: Optional[str] = None):
+        """Get existing node, or create new node given text."""
+
+        start: Optional[int] = None
+        end: Optional[int] = None
+        loc: Optional[SlotLoc] = None
+
+        # Replace with noun chunk if needed
+        if isinstance(text, Token) and text._.noun_chunk is not None:
+            text = text._.noun_chunk
+
+        # Get final text, start, and end
+        if isinstance(text, Token):
+            start = text.idx
+            end = text.idx
+            text = text.lemma_
+        elif isinstance(text, Span):
+            start = text.start
+            end = text.end - 1  # Spacy gives index of token after span
+            text = text.lemma_
+        else:
+            text = str(text)
+
+        if source_id is not None and start is not None:
+            loc = (source_id, start, end)
+
+        if text.lower() not in self.nodes.keys():
+            self.nodes[text] = Node(text, loc=loc)
+
+        return self.nodes[text]
+
+    def create_triple(self, subject: Node, predicate: Pred, object: Node, get_root=True):
+        """Creates a new rdf triple."""
 
         if get_root:
-            subject = self._get_root_subject(Slot(subject))
+            subject = self._get_root_subject(subject)
 
-        triple = self.get_or_none(subject, predicate, object)
-
-        if not triple:
-            triple = Triple(subject, predicate, object)
-            self.triples.append(triple)
+        triple = Triple(subject, predicate, object)
+        self.triples.append(triple)
 
         return triple
 
-    def create(
-        self,
-        subject: Token | SlotPrimitive,
-        predicate: Token | SlotPrimitive,
-        object: Token | SlotPrimitive,
-        get_root=True,
-    ):
-        """Create new triple and add to TripleSet."""
+    # def get_or_create(
+    #     self,
+    #     subject: Token | SlotPrimitive,
+    #     predicate: Token | SlotPrimitive,
+    #     object: Token | SlotPrimitive,
+    #     get_root=True,
+    #     loc: Optional[SlotLoc] = None,
+    # ):
+    #     """Get one or create a new triple."""
 
-        return self.get_or_create(subject, predicate, object, get_root=get_root)
+    #     if isinstance(subject, Token) or isinstance(subject, Span):
+    #         subject = subject.lemma_
+
+    #     if isinstance(predicate, Token or isinstance(predicate, Span)):
+    #         predicate = predicate.lemma_
+
+    #     if isinstance(object, Token) or isinstance(object, Span):
+    #         object = object.lemma_
+
+    #     if get_root:
+    #         subject = self._get_root_subject(Slot(subject))
+
+    #     triple = self.get_or_none(subject, predicate, object)
+
+    #     if not triple:
+    #         triple = Triple(subject, predicate, object)
+    #         self.triples.append(triple)
+
+    #     return triple
+
+    # def create(
+    #     self,
+    #     subject: Token | SlotPrimitive,
+    #     predicate: Token | SlotPrimitive,
+    #     object: Token | SlotPrimitive,
+    #     get_root=True,
+    #     loc: Optional[SlotLoc] = None,
+    # ):
+    #     """Create new triple and add to TripleSet."""
+
+    #     return self.get_or_create(subject, predicate, object, get_root=get_root, loc=loc)

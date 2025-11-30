@@ -27,6 +27,7 @@ dependencies = [
   "spacy-lookups-data>=1.0.5",
   "scikit-learn>=1.4.0",
   "accelerate>=0.26.0",
+  "redis>=7.1.0",
 ]
 
 [dependency-groups]

@@ -1,3 +1,5 @@
+import uuid
+
 from common.tokenize import tokenize_text
 from pipeline_01_processing.tokens_to_rdf import tokens_to_rdf
 
@@ -6,9 +8,10 @@ def test_alias_extraction():
     """Should extract aliases from text."""
 
     source_text = "Hypertension (HTN) is a medical condition."
+    source_id = uuid.uuid4()
 
     doc = tokenize_text(source_text)
-    tripleset = tokens_to_rdf(doc)
+    tripleset = tokens_to_rdf(doc, source_id)
 
     # Register alias from parenthesis
     res_1 = tripleset.get_or_none(subject="Hypertension", predicate="alias", object="HTN")
@@ -35,9 +38,10 @@ def test_alias_assign_root_after_context():
     """Should assign objects to the root when alias defined after root."""
 
     source_text = "Hypertension (HTN) is a medical condition. HTN affects the body's arteries."
+    source_id = uuid.uuid4()
 
     doc = tokenize_text(source_text)
-    tripleset = tokens_to_rdf(doc)
+    tripleset = tokens_to_rdf(doc, source_id)
 
     # Normal assignment
     res_1 = tripleset.get_or_none(
